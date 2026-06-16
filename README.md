@@ -274,15 +274,16 @@ You can find details on [deterministic input features cache](https://github.com/
 ## Citation
 
 ```
-@misc{la2025megafoldsystemleveloptimizationsaccelerating,
-    title={MegaFold: System-Level Optimizations for Accelerating Protein Structure Prediction Models}, 
-    author={Hoa La and Ahan Gupta and Alex Morehead and Jianlin Cheng and Minjia Zhang},
-    year={2025},
-    eprint={2506.20686},
-    archivePrefix={arXiv},
-    primaryClass={q-bio.BM},
-    url={https://arxiv.org/abs/2506.20686}, 
-}
+@INPROCEEDINGS{11520503,
+  author={La, Hoa and Gupta, Ahan and Morehead, Alex and Cheng, Jianlin and Zhang, Minjia},
+  booktitle={ISC High Performance 2026 Research Paper Proceedings (41st International Conference)}, 
+  title={MegaFold: Efficient Training of Next-Generation 3D Attention Protein Models on Cross-Platform GPUs}, 
+  year={2026},
+  volume={},
+  number={},
+  pages={1-16},
+  keywords={Modeling;Training;Kernel;Optimization;Memory;Sequences;Sequential analysis;Tensors;Timing;Graphics processing units;High performance computing;Bioinformatics;Parallel algorithms;Performance analysis},
+  doi={10.23919/ISC.2026.11520503}}
 ```
 
 ## Acknowledgement
