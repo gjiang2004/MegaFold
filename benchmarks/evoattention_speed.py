@@ -67,9 +67,9 @@ for mode in ["full"]:
             x_names=["N_CTX"],
             x_vals=[128, 256, 384, 512, 640, 768, 1024],
             line_arg="provider",
-            line_vals=["triton"]  + ["torch"],
-            line_names=["Triton"] + ["torch"],
-            styles=[("red", "-"), ("blue", "-")],
+            line_vals=["triton", "deepspeed", "torch"],
+            line_names=["Triton", "DeepSpeed", "Torch"],
+            styles=[("red", "-"), ("green", "-"), ("blue", "-")],
             ylabel="time (seconds)",
             plot_name=f"evo-attention-batch{BATCH}-head{N_HEADS}-dim{HEAD_DIM}-nseq{N_SEQ}-{mode}",
             args={

@@ -32,33 +32,41 @@ from benchmarks.evoattention_speed import full_attention, full_deepspeed_evoform
 device = 'cuda'
 dtype = torch.bfloat16
 BATCH, H, HEAD_DIM, N_SEQ = 4, 16, 64, 1
-N_CTX = 128
-provider = "triton"
 
-if provider == "triton":
-    q = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True) # 4 * 1 * 384 * 32 * 64 * 2(bfloat16)
-    k = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    v = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    res_mask = torch.randint(0, 2, (BATCH, N_SEQ, 1, 1, N_CTX), dtype=torch.bool, device=device) 
-    pair_bias = torch.randn((BATCH, 1, H, N_CTX, N_CTX), dtype=dtype, device=device, requires_grad=True)
-    full_evoformer_attention(q, k, v, res_mask, pair_bias)
-elif provider == "deepspeed":
-    q = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    k = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    v = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    res_mask = torch.randint(0, 2, (BATCH, N_SEQ, 1, 1, N_CTX), dtype=torch.bool, device=device).bfloat16() # deepspeed only works with bfloat16
-    pair_bias = torch.randn((BATCH, 1, H, N_CTX, N_CTX), dtype=dtype, device=device, requires_grad=True)
-    full_deepspeed_evoformer_attention(q, k, v, res_mask, pair_bias)
-elif provider == "torch":   
-    q = torch.randn((BATCH, H, N_SEQ, N_CTX, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    k = torch.randn((BATCH, H, N_SEQ, N_CTX, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    v = torch.randn((BATCH, H, N_SEQ, N_CTX, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
-    res_mask = torch.randint(0, 2, (BATCH, 1, N_SEQ, 1, N_CTX), dtype=torch.bool, device=device)
-    pair_bias = torch.randn((BATCH, H, 1, N_CTX, N_CTX), dtype=dtype, device=device, requires_grad=True)
-    full_attention(q, k, v, res_mask, pair_bias)
+SEQ_LENGTHS = [128, 256, 384, 512, 640, 768, 1024]
+PROVIDERS = ["triton", "deepspeed", "torch"]
 
-mem_usage = SynchronizedWallClockTimer.memory_usage()
-print("Memory usage after all: ", mem_usage)
+for N_CTX in SEQ_LENGTHS:
+    for provider in PROVIDERS:
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+        try:
+            if provider == "triton":
+                q = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True) # 4 * 1 * 384 * 32 * 64 * 2(bfloat16)
+                k = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                v = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                res_mask = torch.randint(0, 2, (BATCH, N_SEQ, 1, 1, N_CTX), dtype=torch.bool, device=device) 
+                pair_bias = torch.randn((BATCH, 1, H, N_CTX, N_CTX), dtype=dtype, device=device, requires_grad=True)
+                full_evoformer_attention(q, k, v, res_mask, pair_bias)
+            elif provider == "deepspeed":
+                q = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                k = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                v = torch.randn((BATCH, N_SEQ, N_CTX, H, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                res_mask = torch.randint(0, 2, (BATCH, N_SEQ, 1, 1, N_CTX), dtype=torch.bool, device=device).bfloat16() # deepspeed only works with bfloat16
+                pair_bias = torch.randn((BATCH, 1, H, N_CTX, N_CTX), dtype=dtype, device=device, requires_grad=True)
+                full_deepspeed_evoformer_attention(q, k, v, res_mask, pair_bias)
+            elif provider == "torch":   
+                q = torch.randn((BATCH, H, N_SEQ, N_CTX, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                k = torch.randn((BATCH, H, N_SEQ, N_CTX, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                v = torch.randn((BATCH, H, N_SEQ, N_CTX, HEAD_DIM), dtype=dtype, device=device, requires_grad=True)
+                res_mask = torch.randint(0, 2, (BATCH, 1, N_SEQ, 1, N_CTX), dtype=torch.bool, device=device)
+                pair_bias = torch.randn((BATCH, H, 1, N_CTX, N_CTX), dtype=dtype, device=device, requires_grad=True)
+                full_attention(q, k, v, res_mask, pair_bias)
+            mem_usage = SynchronizedWallClockTimer.memory_usage()
+            print(f"N_CTX={N_CTX} provider={provider} mem_usage:", mem_usage)
+        except RuntimeError as e:
+            print(f"RuntimeError for provider {provider} with N_CTX {N_CTX}: {e}")
+            torch.cuda.empty_cache()
 
 # Memory benchmark full (msa row wise) -- max mem allocated
 # batch4-head32-dim64-nseq1
